@@ -1,10 +1,7 @@
 #!/bin/bash
 
 set -e
-export KBUILD_BUILD_USER=root
-export KBUILD_BUILD_HOST=b7ad1189e79e
-export KBUILD_BUILD_TIMESTAMP="Fri May 8 05:22:58 UTC 2026"
-export KBUILD_BUILD_VERSION=1
+
 # Set correct path
 export PATH="$(realpath ../../../clang-r563880c/bin):$PATH"
 
@@ -65,9 +62,9 @@ make_anykernel() {
 
   cp "${OUT}/arch/arm64/boot/Image" Image
 
-  python mkdtboimg.py create dtbo.img --page_size=4096 "${OUT}/arch/arm64/boot/dts/vendor/qcom/blair-bangkk-evb1-overlay.dtbo"
+#  python mkdtboimg.py create dtbo.img --page_size=4096 "${OUT}/arch/arm64/boot/dts/vendor/qcom/blair-bangkk-evb1-overlay.dtbo"
 
-  cp "${OUT}/arch/arm64/boot/dts/vendor/qcom/blair-moto-bangkk-base.dtb" dtb
+#  cp "${OUT}/arch/arm64/boot/dts/vendor/qcom/blair-moto-bangkk-base.dtb" dtb
 
   ./place-modules.sh "${OUT}/modules_install/lib/modules"/* modules/vendor/lib/modules "/vendor/lib/modules"
 

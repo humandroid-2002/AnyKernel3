@@ -175,7 +175,7 @@ unpack_ramdisk() {
   cd $RAMDISK;
   EXTRACT_UNSAFE_SYMLINKS=1 cpio -d -F $SPLITIMG/ramdisk.cpio -i;
   if [ $? != 0 -o ! "$(ls)" ]; then
-    echo "Unpacking ramdisk failed.";
+    abort "Unpacking ramdisk failed. Aborting...";
   fi;
   if [ -d "$AKHOME/rdtmp" ]; then
     cp -af $AKHOME/rdtmp/* .;
@@ -184,7 +184,7 @@ unpack_ramdisk() {
 ### dump_boot (dump and split image, then extract ramdisk)
 dump_boot() {
   split_boot;
-  [ -f "$SPLITIMG/ramdisk.cpio.gz" -o -f "$SPLITIMG/ramdisk.cpio" ] && unpack_ramdisk;
+  unpack_ramdisk;
 }
 ###
 
@@ -221,7 +221,7 @@ repack_ramdisk() {
     magiskboot cpio ramdisk-new.cpio test;
     magisk_patched=$?;
   fi;
-  [ "$magisk_patched" -eq 1 ] && magiskboot cpio ramdisk-new.cpio "extract .backup/.magisk $SPLITIMG/.magisk";
+  [ $((magisk_patched & 3)) -eq 1 ] && magiskboot cpio ramdisk-new.cpio "extract .backup/.magisk $SPLITIMG/.magisk";
   if [ "$comp" ]; then
     magiskboot compress=$comp ramdisk-new.cpio;
     if [ $? != 0 ] && $comp --help 2>/dev/null; then
@@ -232,7 +232,7 @@ repack_ramdisk() {
     fi;
   fi;
   if [ "$packfail" ]; then
-    echo "Repacking ramdisk failed.";
+    abort "Repacking ramdisk failed. Aborting...";
   fi;
 
   if [ -f "$BIN/mkmtkhdr" -a -f "$SPLITIMG/boot.img-base" ]; then
@@ -326,7 +326,7 @@ flash_boot() {
           magiskboot cpio ramdisk.cpio test;
           magisk_patched=$?;
         fi;
-        if [ "$magisk_patched" -eq 1 ]; then
+        if [ $((magisk_patched & 3)) -eq 1 ]; then
           ui_print " " "Magisk detected! Patching kernel so reflashing Magisk is not necessary...";
           comp=$(magiskboot decompress kernel 2>&1 | grep -vE 'raw|zimage' | sed -n 's;.*\[\(.*\)\];\1;p');
           (magiskboot split $kernel || magiskboot decompress $kernel kernel) 2>/dev/null;
@@ -483,7 +483,7 @@ flash_generic() {
     if [ "$path" == "/dev/block/mapper" ]; then
       avb=$(httools_static avb $1);
       [ $? == 0 ] || abort "Failed to parse fstab entry for $1. Aborting...";
-      if [ "$avb" ] && [ ! "$NO_VBMETA_PARTITION_PATCH" ]; then
+      if [ "$avb" ]; then
         flags=$(httools_static disable-flags);
         [ $? == 0 ] || abort "Failed to parse top-level vbmeta. Aborting...";
         if [ "$flags" == "enabled" ]; then
@@ -564,7 +564,7 @@ flash_dtbo() { flash_generic dtbo; }
 
 ### write_boot (repack ramdisk then build, sign and write image, vendor_dlkm and dtbo)
 write_boot() {
-  [ -d "$ramdisk" ] && repack_ramdisk;
+  repack_ramdisk;
   flash_boot;
   flash_generic vendor_boot; # temporary until hdr v4 can be unpacked/repacked fully by magiskboot
   flash_generic vendor_kernel_boot; # temporary until hdr v4 can be unpacked/repacked fully by magiskboot
