@@ -68,6 +68,20 @@ make_anykernel() {
 
   ./place-modules.sh "${OUT}/modules_install/lib/modules"/* modules/vendor/lib/modules "/vendor/lib/modules"
 
+  # Stock OS expects the Wi-Fi driver as:
+  # qca_cld3_wlan.ko
+  # AOSP expects the Wi-Fi driver as:
+  # wlan.ko
+  if [ -f "modules/vendor/lib/modules/wlan.ko" ]; then
+    echo "Creating qca_cld3_wlan.ko ..."
+    cp -f \
+      "modules/vendor/lib/modules/wlan.ko" \
+      "modules/vendor/lib/modules/qca_cld3_wlan.ko"
+  else
+    echo "ERROR: wlan.ko not found!"
+    exit 1
+  fi
+
   find modules -name "*.ko" -exec llvm-strip --strip-unneeded -g {} \;
 
   rm -f "moto-$ZIPPREFIX-anykernel.zip"
