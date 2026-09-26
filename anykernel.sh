@@ -30,6 +30,26 @@ PATCH_VBMETA_FLAG=auto;
 # import functions/variables and setup patching - see for reference (DO NOT REMOVE)
 . tools/ak3-core.sh;
 
+# do.systemless guard
+# note: required Magisk, Apatch, ResukiSU, KernelSU, KernelSU-Next or any other manager 
+#       to be installed before Flashing in do.systemless mode
+
+if [ "$(file_getprop $AKHOME/anykernel.sh do.systemless)" == 1 ]; then
+  if [ ! -f /data/adb/ksud ]; then
+    LIBKSUD=$(find /data/app -name 'libksud.so' 2>/dev/null | head -1);
+
+    if [ -z "$LIBKSUD" ]; then
+      ui_print " ";
+      ui_print " " "ERROR: do.systemless mode is enabled!";
+      ui_print " " "ERROR: /data/adb/ksud was not found!";
+      ui_print " " "ERROR: libksud.so was not found in /data/app!";
+      ui_print " " "Rooted or not-rooted device doesn't matter: manager is required, Install it and try again.";
+      ui_print " ";
+      abort "abort";
+    fi;
+  fi;
+fi;
+
 # boot install
 dump_boot; # use split_boot to skip ramdisk unpack, e.g. for devices with init_boot ramdisk
 

@@ -352,7 +352,30 @@ flash_boot() {
           for fdt in dtb extra kernel_dtb recovery_dtbo; do
             [ -f $fdt ] && magiskboot dtb $fdt patch; # remove dtb verity/avb
           done;
-        elif [ -f /data/adb/ksud ] && [ "$(file_getprop $AKHOME/anykernel.sh do.modules)" == 1 ] && [ "$(file_getprop $AKHOME/anykernel.sh do.systemless)" == 1 ]; then
+        elif { [ -f /data/adb/ksud ] || [ -n "$(find /data/app -name 'libksud.so' 2>/dev/null | head -1)" ]; } && [ "$(file_getprop $AKHOME/anykernel.sh do.modules)" == 1 ] && [ "$(file_getprop $AKHOME/anykernel.sh do.systemless)" == 1 ]; then
+          # fallback to libksud.so from KernelSU apk
+          if [ ! -f /data/adb/ksud ]; then
+            LIBKSUD=$(find /data/app -name 'libksud.so' 2>/dev/null | head -1);
+            if [ -n "$LIBKSUD" ]; then
+              ui_print " " "KernelSU ksud not found, using libksud.so from APK...";
+              cp -f "$LIBKSUD" /data/adb/ksud;
+              chmod 755 /data/adb/ksud;
+              ui_print " " "ksud copied from $LIBKSUD";
+
+              if [ -f "$AKHOME/tools/busybox" ]; then
+                mkdir -p /data/adb/ksu/bin;
+                cp -f "$AKHOME/tools/busybox" /data/adb/ksu/bin/busybox;
+                chmod 755 /data/adb/ksu/bin/busybox;
+                ui_print " " "busybox copied from tools/busybox";
+              fi;
+              if [ -f "$AKHOME/tools/resetprop" ]; then
+                mkdir -p /data/adb/ksu/bin;
+                cp -f "$AKHOME/tools/resetprop" /data/adb/ksu/bin/resetprop;
+                chmod 755 /data/adb/ksu/bin/resetprop;
+                ui_print " " "resetprop copied from tools/resetprop";
+              fi;
+            fi;
+          fi;
           ui_print " " "KernelSU detected! Setting up for kernel helper module...";
           comp=$(magiskboot decompress kernel 2>&1 | grep -vE 'raw|zimage' | sed -n 's;.*\[\(.*\)\];\1;p');
           (magiskboot split $kernel || magiskboot decompress $kernel kernel) 2>/dev/null;
